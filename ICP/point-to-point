@@ -6,6 +6,9 @@ import random
 from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
 
+## Reference : https://github.com/ClayFlannigan/icp/blob/167cc4adc442487d2b1b331e18818a6f4d779d49/icp.py
+
+
 # Prepare bun000.ply, bun045.ply
 
 
