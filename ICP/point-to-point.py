@@ -6,14 +6,10 @@ import random
 from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
 
-## Reference : https://github.com/ClayFlannigan/icp/blob/167cc4adc442487d2b1b331e18818a6f4d779d49/icp.py
-
-
 # Prepare bun000.ply, bun045.ply
 
 
 def visualize(s, t):
-    plt.clf()
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(projection='3d')
     # for s in src:
@@ -56,8 +52,8 @@ def best_fit_transform(A, B):
        Vt[m-1, :] *= -1
        R = np.dot(Vt.T, U.T)
     # translation
-    # s = sum(b.T.dot(a) for a, b in zip(AA, BB)) / sum(a.T.dot(a) for a in AA)
-    s=1
+    s = sum(b.T.dot(a) for a, b in zip(AA, BB)) / sum(a.T.dot(a) for a in AA)
+    # s=1
     t = centroid_B.T - s * np.dot(R, centroid_A.T)
 
     # homogeneous transformation
@@ -87,7 +83,7 @@ def nearest_neighbor(src, dst):
     return distances.ravel(), indices.ravel()
 
 
-def icp(A, B, init_pose=None, max_iterations=20, tolerance=0.0000001):
+def icp(A, B, init_pose=None, tolerance=1e-7):
     '''
     The Iterative Closest Point method: finds best-fit transform that maps points A on to points B
     Input:
@@ -116,8 +112,9 @@ def icp(A, B, init_pose=None, max_iterations=20, tolerance=0.0000001):
     dst[:m, :] = np.copy(B[sampler, :].T)
 
     prev_error = 0
+    count = 0
     # result_T = np.identity(m+1)
-    for i in range(max_iterations):
+    while True:
         # find the nearest neighbors between the current source and destination points
         distances, indices = nearest_neighbor(src[:m, :].T, dst[:m,:].T)
 
@@ -129,8 +126,10 @@ def icp(A, B, init_pose=None, max_iterations=20, tolerance=0.0000001):
         src = T.dot(src) * s
         mean_error = np.mean(distances)
         if np.abs(prev_error - mean_error) < tolerance:
+            print('Iterate loop:: ', count)
             break
         prev_error = mean_error
+        count += 1
     print(mean_error)
     print('calculate final transformation')
     # calculate final transformation
@@ -141,9 +140,9 @@ def icp(A, B, init_pose=None, max_iterations=20, tolerance=0.0000001):
 
 if __name__ == '__main__':
     ply_files = sorted(glob.glob(os.path.join('./behind', '*.ply')))
-    
+
     ply_data = [[] for _ in range(len(ply_files))]
-    
+
     for i, ply in enumerate(ply_files):
         with open(ply, 'r') as ply_:
             lines = ply_.readlines()
@@ -156,13 +155,13 @@ if __name__ == '__main__':
                         ply_data[i].append(points)
                 if 'end_header' in line:
                     record = True
-    
+
         ply_data[i] = np.array(ply_data[i])
         print(ply_data[i].shape)
-    
+
     # ply_data[i] = Nx3 format
     # each ply_data[i] has different N. We need to use same amounts.
-    
+
     for i in range(len(ply_data) -1):
         src_ = ply_data[i]
         tar_ = ply_data[i+1]
